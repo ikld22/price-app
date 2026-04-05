@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مقارنة الأسعار</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --card: #181c24;
+    --border: #252a36;
+    --gold: #f0b429;
+    --gold-dim: #a07820;
+    --text: #eef0f5;
+    --muted: #6b7280;
+    --green: #34d399;
+    --red: #f87171;
+    --blue: #60a5fa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    direction: rtl;
+  }
+
+  /* ---- Noise overlay ---- */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ---- Grid lines background ---- */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(240,180,41,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240,180,41,.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* ---- Header ---- */
+  header {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .logo-icon {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--gold), #c88b10);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 0 24px rgba(240,180,41,.3);
+  }
+
+  .logo-text {
+    font-size: 28px;
+    font-weight: 900;
+    background: linear-gradient(90deg, var(--gold), #fff8e0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 300;
+  }
+
+  /* ---- Glowing divider ---- */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+    margin: 10px auto 0;
+    width: 200px;
+    opacity: .5;
+  }
+
+  /* ---- Tabs ---- */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 6px;
+    margin-bottom: 28px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Cairo', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .25s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  .tab-btn.active {
+    background: linear-gradient(135deg, var(--gold), #c88b10);
+    color: #0a0c10;
+    box-shadow: 0 4px 16px rgba(240,180,41,.25);
+  }
+
+  .tab-btn:not(.active):hover { color: var(--text); background: var(--card); }
+
+  /* ---- Panel ---- */
+  .panel { display: none; animation: fadeIn .3s ease; }
+  .panel.active { display: block; }
+
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ---- Section card ---- */
+  .section-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .section-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ---- Store grid ---- */
+  .stores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+
+  .store-item {
+    position: relative;
+  }
+
+  .store-item input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0; height: 0;
+  }
+
+  .store-item label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all .2s;
+    user-select: none;
+  }
+
+  .store-item input:checked + label {
+    border-color: var(--gold);
+    background: rgba(240,180,41,.08);
+    color: var(--gold);
+    box-shadow: 0 0 0 1px rgba(240,180,41,.2);
+  }
+
+  .store-item label:hover {
+    border-color: var(--gold-dim);
+    background: rgba(240,180,41,.04);
+  }
+
+  .check-icon {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+    font-size: 11px;
+  }
+
+  .store-item input:checked + label .check-icon {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #0a0c10;
+    font-weight: 900;
+  }
+
+  /* Select/Deselect all */
+  .select-all-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Cairo', sans-serif;
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all .2s;
+    margin-bottom: 12px;
+  }
+  .select-all-btn:hover { color: var(--text); border-color: var(--muted); }
+
+  /* ---- Search input ---- */
+  .input-group {
+    display: flex;
+    gap: 10px;
+  }
+
+  .search-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-family: 'Cairo', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color .2s;
+    direction: rtl;
+  }
+
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: var(--gold-dim); }
+
+  /* ---- Buttons ---- */
+  .btn-primary {
+    padding: 14px 28px;
+    background: linear-gradient(135deg, var(--gold), #c88b10);
+    border: none;
+    border-radius: 10px;
+    color: #0a0c10;
+    font-family: 'Cairo', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex; align-items: center; gap: 8px;
+    white-space: nowrap;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(240,180,41,.35);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-primary:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* ---- File Upload ---- */
+  .file-drop {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+  }
+
+  .file-drop:hover, .file-drop.drag-over {
+    border-color: var(--gold-dim);
+    background: rgba(240,180,41,.04);
+  }
+
+  .file-drop input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .file-drop-icon { font-size: 36px; margin-bottom: 12px; }
+
+  .file-drop-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .file-drop-hint { font-size: 13px; color: var(--muted); }
+
+  .file-selected {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: rgba(52,211,153,.08);
+    border: 1px solid rgba(52,211,153,.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-top: 12px;
+  }
+
+  .file-selected.show { display: flex; }
+  .file-selected-icon { font-size: 22px; }
+  .file-selected-name { font-size: 14px; font-weight: 600; color: var(--green); flex: 1; }
+  .file-remove-btn {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 16px; transition: color .2s;
+  }
+  .file-remove-btn:hover { color: var(--red); }
+
+  /* ---- Results ---- */
+  #results { margin-top: 30px; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .results-title {
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .results-count {
+    font-size: 13px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .store-group { margin-bottom: 24px; }
+
+  .store-group-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    padding: 8px 14px;
+    background: var(--surface);
+    border-radius: 8px;
+    border-right: 3px solid var(--gold);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .store-group-count {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* Product card */
+  .product-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+    transition: border-color .2s;
+  }
+
+  .product-card:hover { border-color: var(--gold-dim); }
+
+  .product-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  .product-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .price-current {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--gold);
+  }
+
+  .price-original {
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: line-through;
+  }
+
+  .discount-badge {
+    background: rgba(52,211,153,.15);
+    color: var(--green);
+    border: 1px solid rgba(52,211,153,.3);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .product-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Cairo', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+
+  .product-link:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+  }
+
+  /* ---- Empty / Error States ---- */
+  .state-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .state-empty .icon { font-size: 48px; margin-bottom: 16px; }
+  .state-empty p { font-size: 15px; }
+
+  /* ---- Loader ---- */
+  .loader {
+    display: none;
+    text-align: center;
+    padding: 50px 20px;
+  }
+  .loader.show { display: block; }
+
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loader-text { color: var(--muted); font-size: 14px; }
+
+  /* ---- Toast ---- */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 100;
+    transition: transform .3s ease;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { border-color: rgba(248,113,113,.4); color: var(--red); }
+  .toast.success { border-color: rgba(52,211,153,.4); color: var(--green); }
+
+  /* ---- Download btn ---- */
+  .download-area {
+    display: none;
+    text-align: center;
+    margin-top: 24px;
+  }
+  .download-area.show { display: block; }
+
+  .btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 32px;
+    background: linear-gradient(135deg, #34d399, #059669);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Cairo', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .2s;
+  }
+  .btn-download:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52,211,153,.3);
+  }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-mark">
+      <div class="logo-icon">🔍</div>
+      <span class="logo-text">مقارنة الأسعار</span>
+    </div>
+    <p>ابحث عن أفضل الأسعار عبر المتاجر السعودية</p>
+    <div class="divider"></div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('search', this)">
+      🔎 بحث بالموديل
+    </button>
+    <button class="tab-btn" onclick="switchTab('excel', this)">
+      📊 رفع ملف Excel
+    </button>
+  </div>
+
+  <!-- ====== PANEL: Search ====== -->
+  <div class="panel active" id="panel-search">
+
+    <!-- Stores -->
+    <div class="section-card">
+      <div class="section-label">اختر المتاجر</div>
+      <button class="select-all-btn" onclick="toggleAll('search')">تحديد الكل / إلغاء الكل</button>
+      <div class="stores-grid" id="stores-search">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+
+    <!-- Query -->
+    <div class="section-card">
+      <div class="section-label">الموديل أو اسم المنتج</div>
+      <div class="input-group">
+        <input
+          class="search-input"
+          type="text"
+          id="search-query"
+          placeholder="مثال: Samsung Galaxy S24, iPhone 15 Pro..."
+          onkeydown="if(event.key==='Enter') doSearch()"
+        />
+        <button class="btn-primary" onclick="doSearch()" id="search-btn">
+          <span>بحث</span> 🔍
+        </button>
+      </div>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader" id="loader-search">
+      <div class="spinner"></div>
+      <p class="loader-text">جارٍ البحث في المتاجر...</p>
+    </div>
+
+    <!-- Results -->
+    <div id="results"></div>
+
+  </div>
+
+  <!-- ====== PANEL: Excel ====== -->
+  <div class="panel" id="panel-excel">
+
+    <!-- Stores -->
+    <div class="section-card">
+      <div class="section-label">اختر المتاجر</div>
+      <button class="select-all-btn" onclick="toggleAll('excel')">تحديد الكل / إلغاء الكل</button>
+      <div class="stores-grid" id="stores-excel">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+
+    <!-- File Upload -->
+    <div class="section-card">
+      <div class="section-label">رفع ملف الموديلات</div>
+
+      <div class="file-drop" id="file-drop"
+        ondragover="event.preventDefault(); this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event)">
+        <input type="file" accept=".xlsx,.xls" id="excel-file" onchange="onFileSelect(this)">
+        <div class="file-drop-icon">📂</div>
+        <div class="file-drop-text">اسحب ملف Excel هنا أو انقر للاختيار</div>
+        <div class="file-drop-hint">يدعم .xlsx و .xls — العمود الأول يحتوي الموديلات</div>
+      </div>
+
+      <div class="file-selected" id="file-selected">
+        <span class="file-selected-icon">✅</span>
+        <span class="file-selected-name" id="file-name-display">—</span>
+        <button class="file-remove-btn" onclick="clearFile()" title="إزالة">✕</button>
+      </div>
+    </div>
+
+    <div style="text-align:center; margin-top: 4px;">
+      <button class="btn-primary" onclick="doExcel()" id="excel-btn"
+        style="display:inline-flex; padding: 14px 36px;">
+        <span>معالجة الملف</span> ⚡
+      </button>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader" id="loader-excel">
+      <div class="spinner"></div>
+      <p class="loader-text">جارٍ معالجة الملف ومقارنة الأسعار...</p>
+      <p class="loader-text" style="margin-top:6px; font-size:12px;">قد تستغرق العملية بضع دقائق</p>
+    </div>
+
+    <!-- Download -->
+    <div class="download-area" id="download-area">
+      <a class="btn-download" id="download-link" href="#" download>
+        ⬇️ تحميل ملف المقارنة
+      </a>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// Store Config
+// ============================================================
+const STORES = [
+  { key: 'extra',    label: '🛒 إكسترا' },
+  { key: 'almanea',  label: '🏪 المنيع' },
+  { key: 'mahally',  label: '🏬 محلي' },
+  { key: 'closebuy', label: '🛍️ كلوز باي' },
+  { key: 'swsg',     label: '🛒 SWSG' },
+  { key: 'alghanim', label: '🔵 الغانم' },
+  { key: 'tamkeen',  label: '🟣 تمكين' },
+];
+
+// ============================================================
+// Build Store Checkboxes
+// ============================================================
+function buildStoreGrid(containerId, prefix) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = STORES.map(s => `
+    <div class="store-item">
+      <input type="checkbox" id="${prefix}-${s.key}" value="${s.key}" checked>
+      <label for="${prefix}-${s.key}">
+        <span class="check-icon">✓</span>
+        ${s.label}
+      </label>
+    </div>
+  `).join('');
+}
+
+buildStoreGrid('stores-search', 's');
+buildStoreGrid('stores-excel', 'e');
+
+// ============================================================
+// Toggle All
+// ============================================================
+function toggleAll(panel) {
+  const prefix = panel === 'search' ? 's' : 'e';
+  const boxes = STORES.map(s => document.getElementById(`${prefix}-${s.key}`));
+  const allChecked = boxes.every(b => b.checked);
+  boxes.forEach(b => b.checked = !allChecked);
+}
+
+// ============================================================
+// Get Selected Stores
+// ============================================================
+function getSelectedStores(prefix) {
+  return STORES
+    .map(s => document.getElementById(`${prefix}-${s.key}`))
+    .filter(b => b && b.checked)
+    .map(b => b.value);
+}
+
+// ============================================================
+// Tab Switching
+// ============================================================
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`panel-${tab}`).classList.add('active');
+}
+
+// ============================================================
+// Toast
+// ============================================================
+function showToast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ============================================================
+// SEARCH
+// ============================================================
+async function doSearch() {
+  const query = document.getElementById('search-query').value.trim();
+  const stores = getSelectedStores('s');
+
+  if (!query) return showToast('⚠️ أدخل اسم الموديل أو المنتج', 'error');
+  if (!stores.length) return showToast('⚠️ اختر متجراً واحداً على الأقل', 'error');
+
+  const btn = document.getElementById('search-btn');
+  const loader = document.getElementById('loader-search');
+  const results = document.getElementById('results');
+
+  btn.disabled = true;
+  loader.classList.add('show');
+  results.innerHTML = '';
+
+  try {
+    const res = await fetch('/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, stores })
+    });
+
+    const data = await res.json();
+    renderResults(data, query);
+
+  } catch (e) {
+    showToast('❌ حدث خطأ في الاتصال', 'error');
+    results.innerHTML = `<div class="state-empty"><div class="icon">⚠️</div><p>تعذّر الاتصال بالخادم</p></div>`;
+  } finally {
+    btn.disabled = false;
+    loader.classList.remove('show');
+  }
+}
+
+// ============================================================
+// Render Results
+// ============================================================
+function renderResults(data, query) {
+  const el = document.getElementById('results');
+  let totalCount = 0;
+  let html = '';
+
+  for (const [storeKey, products] of Object.entries(data)) {
+    if (!products || !products.length) continue;
+    totalCount += products.length;
+
+    const storeName = products[0]?.store || storeKey;
+
+    const cards = products.map(p => `
+      <div class="product-card">
+        <div>
+          <div class="product-name">${p.name || '—'}</div>
+          <div class="product-meta">
+            <span class="price-current">${p.current_price || '—'}</span>
+            ${p.original_price ? `<span class="price-original">${p.original_price}</span>` : ''}
+            ${p.discount ? `<span class="discount-badge">${p.discount}</span>` : ''}
+          </div>
+        </div>
+        ${p.link && p.link !== '#'
+          ? `<a class="product-link" href="${p.link}" target="_blank" rel="noopener">عرض المنتج ↗</a>`
+          : ''}
+      </div>
+    `).join('');
+
+    html += `
+      <div class="store-group">
+        <div class="store-group-title">
+          <span>${storeName}</span>
+          <span class="store-group-count">${products.length} نتيجة</span>
+        </div>
+        ${cards}
+      </div>
+    `;
+  }
+
+  if (!html) {
+    el.innerHTML = `
+      <div class="state-empty">
+        <div class="icon">🔍</div>
+        <p>لم نعثر على نتائج لـ «${query}»</p>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="results-header">
+      <div class="results-title">نتائج البحث</div>
+      <div class="results-count">${totalCount} منتج</div>
+    </div>
+    ${html}
+  `;
+}
+
+// ============================================================
+// FILE UPLOAD
+// ============================================================
+let selectedFile = null;
+
+function onFileSelect(input) {
+  if (input.files && input.files[0]) {
+    setFile(input.files[0]);
+  }
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('file-drop').classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && (f.name.endsWith('.xlsx') || f.name.endsWith('.xls'))) {
+    setFile(f);
+  } else {
+    showToast('⚠️ يرجى رفع ملف Excel فقط (.xlsx)', 'error');
+  }
+}
+
+function setFile(f) {
+  selectedFile = f;
+  document.getElementById('file-name-display').textContent = f.name;
+  document.getElementById('file-selected').classList.add('show');
+  document.getElementById('download-area').classList.remove('show');
+}
+
+function clearFile() {
+  selectedFile = null;
+  document.getElementById('excel-file').value = '';
+  document.getElementById('file-selected').classList.remove('show');
+  document.getElementById('download-area').classList.remove('show');
+}
+
+async function doExcel() {
+  if (!selectedFile) return showToast('⚠️ اختر ملف Excel أولاً', 'error');
+  const stores = getSelectedStores('e');
+  if (!stores.length) return showToast('⚠️ اختر متجراً واحداً على الأقل', 'error');
+
+  const btn = document.getElementById('excel-btn');
+  const loader = document.getElementById('loader-excel');
+  const dlArea = document.getElementById('download-area');
+
+  btn.disabled = true;
+  loader.classList.add('show');
+  dlArea.classList.remove('show');
+
+  const fd = new FormData();
+  fd.append('file', selectedFile);
+  fd.append('stores', JSON.stringify(stores));
+
+  try {
+    const res = await fetch('/process_excel', {
+      method: 'POST',
+      body: fd
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const dl = document.getElementById('download-link');
+    dl.href = url;
+    dl.download = `مقارنة_الأسعار_${new Date().toISOString().slice(0,10)}.xlsx`;
+    dlArea.classList.add('show');
+    showToast('✅ تمت المعالجة بنجاح!', 'success');
+
+  } catch (e) {
+    showToast('❌ حدث خطأ أثناء المعالجة', 'error');
+  } finally {
+    btn.disabled = false;
+    loader.classList.remove('show');
+  }
+}
+</script>
+</body>
+</html>
