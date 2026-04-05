@@ -527,9 +527,19 @@ def home():
         return render_template("Templates/Index.html")
     except:
         try:
-            return render_template("Templates/Index.html")
+            return render_template("index.html")
         except:
             return "Hello! Price Compare App is working. But HTML template not found."
+
+@app.route('/debug')
+def debug():
+    import os
+    return {
+        "current_directory": os.getcwd(),
+        "files_and_folders": os.listdir('.'),
+        "templates_exists": os.path.exists('Templates'),
+        "templates_content": os.listdir('Templates') if os.path.exists('Templates') else 'NOT FOUND'
+    }
 
 @app.route("/search", methods=["POST"])
 def api_search():
